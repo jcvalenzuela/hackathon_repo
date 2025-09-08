@@ -5,6 +5,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -20,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -45,9 +51,9 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun TruckWireframe(modifier: Modifier = Modifier, vehicleInfo: VehicleInfo = VehicleInfo()) {
-     var pointerPosition by remember {
-         mutableStateOf(arrayOf(0f, 0f))
-     }
+    var pointerPosition by remember {
+        mutableStateOf(arrayOf(0f, 0f))
+    }
 
     Box(
         modifier = modifier
@@ -77,20 +83,49 @@ val Number.composeDp
 
 @Composable
 fun SetTirePressureErrorPointerImage(vehicleInfo: VehicleInfo, x: Float, y: Float, isError: Boolean) {
-    var res = if (isError) {
-        painterResource(R.drawable.point_stable)
+    val res = if (isError) {
+        R.drawable.point_error
     } else {
-        painterResource(R.drawable.point_error)
+        R.drawable.point_normal
     }
 
-    Image(
-        painter = res,
-        contentDescription = "Tire Pressure Error Pointer",
-        modifier = Modifier
-            .size(1000.composeDp / vehicleInfo.senseWidth)
-            .offset(x = x.composeDp / vehicleInfo.senseWidth, y = y.composeDp / vehicleInfo.senseWidth),
-        alignment = Alignment.Center
-    )
+    val painter = painterResource(res)
+
+    //Set animation for the pointer when there is an error
+    if (isError) {
+        //Blinking animation for the pointer
+        val infiniteTransition = rememberInfiniteTransition(label = "pointer")
+        val alpha by infiniteTransition.animateFloat(
+            initialValue = 1f,
+            targetValue = 0f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 700),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pointer"
+        )
+
+        Image(
+            painter = painter,
+            contentDescription = "Tire Pressure Error Pointer",
+            modifier = Modifier
+                .size(1000.composeDp / vehicleInfo.senseWidth)
+                .offset(x = x.composeDp / vehicleInfo.senseWidth, y = y.composeDp / vehicleInfo.senseWidth)
+                .alpha(alpha),
+            alignment = Alignment.Center
+        )
+    } else {
+        //Non-blinking stable pointer
+        Image(
+            painter = painter,
+            contentDescription = "Tire Pressure Error Pointer",
+            modifier = Modifier
+                .size(1000.composeDp / vehicleInfo.senseWidth)
+                .offset(x = x.composeDp / vehicleInfo.senseWidth, y = y.composeDp / vehicleInfo.senseWidth),
+            alignment = Alignment.Center
+        )
+    }
+
 }
 
 @Preview(showBackground = true)
